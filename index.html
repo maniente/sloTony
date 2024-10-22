@@ -6,36 +6,55 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>SloTony</title>
   <style>
-    /* You can add your styles here */
+    /* Styles for the entire body */
     body {
       font-family: Sans-Serif;
       margin: 0;
       background-color: black;
       color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden; /* Prevent overflow */
     }
+
+    /* Styles for the slots container */
     .slots {
       text-align: center;
-      margin-top: 50px;
+      display: flex; /* Use flexbox to align reels */
+      justify-content: space-between; /* Space between reels */
+      width: 100%; /* Full width to fit on mobile */
+      max-width: 400px; /* Maximum width for larger screens */
     }
+
+    /* Styles for each reel */
     .reel {
       display: inline-block;
-      width: 100px;
-      height: 200px;
+      width: 80px; /* Width of each reel */
+      height: 200px; /* Height of each reel */
       margin: 10px;
       background-color: #333;
       border-radius: 10px;
-      background-image: url('https://assets.codepen.io/439000/slotreel.webp');
+      background-image: url('https://assets.codepen.io/439000/slotreel.webp'); /* Placeholder background */
       background-size: cover;
       background-position: 0 0;
     }
+
+    /* Debug text style */
     .debug {
       margin-top: 20px;
       text-align: center;
     }
+
+    /* Link style */
     a {
       color: #00f;
       text-decoration: none;
     }
+
+    /* Button style */
     .button {
       display: inline-block;
       margin-top: 20px;
@@ -49,8 +68,21 @@
       text-align: center;
       transition: background-color 0.3s ease;
     }
+
+    /* Button hover effect */
     .button:hover {
       background-color: darkred;
+    }
+
+    /* Media queries for responsive design */
+    @media (max-width: 500px) {
+      .reel {
+        width: 70px; /* Smaller width for smaller screens */
+        height: 150px; /* Adjust height for smaller screens */
+      }
+      .button {
+        font-size: 1rem; /* Smaller button text */
+      }
     }
   </style>
 </head>
@@ -60,7 +92,7 @@
     <div class="reel"></div>
     <div class="reel"></div>
     <div class="reel"></div>
-    <div class="reel"></div>
+    <div class="reel"></div> <!-- Added fourth reel -->
   </div>
   
   <div id="debug" class="debug"></div>
@@ -74,8 +106,18 @@
      * Setup
      */
     const debugEl = document.getElementById('debug'),
-      // Mapping of indexes to icons: start from banana in middle of initial position and then upwards
-      iconMap = ["banana", "seven", "cherry", "plum", "orange", "bell", "bar", "lemon", "melon"],
+      // Mapping of indexes to icons: Use your own image URLs here
+      iconMap = [
+        "url('path/to/your/image1.png')", // Replace with your image paths
+        "url('path/to/your/image2.png')",
+        "url('path/to/your/image3.png')",
+        "url('path/to/your/image4.png')",
+        "url('path/to/your/image5.png')",
+        "url('path/to/your/image6.png')",
+        "url('path/to/your/image7.png')",
+        "url('path/to/your/image8.png')",
+        "url('path/to/your/image9.png')"
+      ],
       // Width of the icons
       icon_width = 79, 
       // Height of one icon in the strip
@@ -85,46 +127,35 @@
       // Max-speed in ms for animating one icon down
       time_per_icon = 100,
       // Holds icon indexes
-      indexes = [0, 0, 0 ,0];
+      indexes = [0, 0, 0, 0]; // Adjusted to hold 4 indexes
 
     /** 
      * Roll one reel
      */
     const roll = (reel, offset = 0) => {
-      // Minimum of 2 + the reel offset rounds
       const delta = (offset + 2) * num_icons + Math.round(Math.random() * num_icons); 
 
-      // Return promise so we can wait for all reels to finish
       return new Promise((resolve, reject) => {
         const style = getComputedStyle(reel),
-          // Current background position
           backgroundPositionY = parseFloat(style["background-position-y"]),
-          // Target background position
           targetBackgroundPositionY = backgroundPositionY + delta * icon_height,
-          // Normalized background position, for reset
           normTargetBackgroundPositionY = targetBackgroundPositionY % (num_icons * icon_height);
 
-        // Delay animation with timeout, for some reason a delay in the animation property causes stutter
         setTimeout(() => { 
-          // Set transition properties ==> https://cubic-bezier.com/#.41,-0.01,.63,1.09
           reel.style.transition = `background-position-y ${(8 + 1 * delta) * time_per_icon}ms cubic-bezier(.41,-0.01,.63,1.09)`;
-          // Set background position
           reel.style.backgroundPositionY = `${backgroundPositionY + delta * icon_height}px`;
         }, offset * 150);
           
-        // After animation
         setTimeout(() => {
-          // Reset position, so that it doesn't get higher without limit
           reel.style.transition = `none`;
           reel.style.backgroundPositionY = `${normTargetBackgroundPositionY}px`;
-          // Resolve this promise
           resolve(delta % num_icons);
         }, (8 + 1 * delta) * time_per_icon + offset * 150);
       });
     };
 
     /**
-     * Roll all reels, when promise resolves roll again
+     * Roll all reels
      */
     function rollAll() {
       debugEl.textContent = 'rolling...';
@@ -132,17 +163,13 @@
       const reelsList = document.querySelectorAll('.slots > .reel');
 
       Promise
-        // Activate each reel, must convert NodeList to Array for this with spread operator
         .all([...reelsList].map((reel, i) => roll(reel, i))) 
-        // When all reels done animating (all promises solve)
         .then((deltas) => {
-          // add up indexes
           deltas.forEach((delta, i) => indexes[i] = (indexes[i] + delta) % num_icons);
           debugEl.textContent = indexes.map((i) => iconMap[i]).join(' - ');
 
-          // Win conditions
-          if (indexes[0] == indexes[1] || indexes[1] == indexes[2]) {
-            const winCls = indexes[0] == indexes[2] ? "win2" : "win1";
+          if (indexes[0] == indexes[1] || indexes[1] == indexes[2] || indexes[2] == indexes[3]) {
+            const winCls = indexes[0] == indexes[3] ? "win2" : "win1";
             document.querySelector(".slots").classList.add(winCls);
             setTimeout(() => document.querySelector(".slots").classList.remove(winCls), 2000);
           }
