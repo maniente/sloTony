@@ -6,82 +6,108 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>SloTony</title>
   <style>
-    /* Styles for the entire body */
     body {
       font-family: Sans-Serif;
       margin: 0;
-      background-color: black;
       color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      overflow: hidden; /* Prevent overflow */
+      overflow: hidden;
+      background-image: url('img/grifone.png'); /* Set your background image */
+      background-size: cover;
+      background-position: center;
+      position: relative;
     }
 
-    /* Styles for the slots container */
+    /* Slots container */
     .slots {
       text-align: center;
-      display: flex; /* Use flexbox to align reels */
-      justify-content: space-between; /* Space between reels */
-      width: 100%; /* Full width to fit on mobile */
-      max-width: 400px; /* Maximum width for larger screens */
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      border-radius: 10px;
     }
 
-    /* Styles for each reel */
+    /* Slot wheels with green background and yellow 3D effect border */
     .reel {
       display: inline-block;
-      width: 80px; /* Width of each reel */
-      height: 200px; /* Height of each reel */
+      width: 80px;
+      height: 200px;
       margin: 10px;
-      background-color: #333;
+      background-color: green; /* Green background inside the wheel */
       border-radius: 10px;
-      background-image: url('https://assets.codepen.io/439000/slotreel.webp'); /* Placeholder background */
-      background-size: cover;
+      background-size: 100% 79px;
       background-position: 0 0;
+      transition: background-position-y 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+      /* Yellow 3D border effect */
+      border: 3px solid yellow;
+      box-shadow: 0px 4px 10px rgba(255, 255, 0, 0.6), 
+                  inset 0px 4px 10px rgba(255, 255, 0, 0.6); /* 3D shadow effect */
     }
 
-    /* Debug text style */
-    .debug {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    /* Link style */
-    a {
-      color: #00f;
-      text-decoration: none;
-    }
-
-    /* Button style */
+    /* Button with 3D effect */
     .button {
       display: inline-block;
       margin-top: 20px;
       padding: 10px 20px;
-      background-color: red;
+      background-color: green;
       color: white;
       border: none;
       border-radius: 5px;
       font-size: 1.2rem;
       cursor: pointer;
+      transition: background-color 0.3s ease, box-shadow 0.2s ease;
+      box-shadow: 0px 4px 0px #004d00; /* 3D effect */
+    }
+
+    /* Button press effect (yellow) */
+    .button:active {
+      background-color: yellow;
+      color: black;
+      box-shadow: 0px 2px 0px #b5b500; /* Pressed down 3D effect */
+      transform: translateY(2px); /* Button pressed down */
+    }
+
+    /* Coin balance container (styled like the reels) */
+    .balance {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: green;
+      border: 3px solid yellow;
+      box-shadow: 0px 4px 10px rgba(255, 255, 0, 0.6), 
+                  inset 0px 4px 10px rgba(255, 255, 0, 0.6); /* 3D shadow effect */
+      padding: 10px;
+      border-radius: 10px;
       text-align: center;
-      transition: background-color 0.3s ease;
+      color: white;
+      font-size: 1.2rem;
+      width: 150px;
     }
 
-    /* Button hover effect */
-    .button:hover {
-      background-color: darkred;
+    .balance div {
+      margin: 5px 0;
     }
 
-    /* Media queries for responsive design */
     @media (max-width: 500px) {
       .reel {
-        width: 70px; /* Smaller width for smaller screens */
-        height: 150px; /* Adjust height for smaller screens */
+        width: 70px;
+        height: 150px;
       }
+
       .button {
-        font-size: 1rem; /* Smaller button text */
+        font-size: 1rem;
+      }
+
+      .balance {
+        width: 120px;
+        font-size: 1rem;
       }
     }
   </style>
@@ -92,91 +118,105 @@
     <div class="reel"></div>
     <div class="reel"></div>
     <div class="reel"></div>
-    <div class="reel"></div> <!-- Added fourth reel -->
+    <div class="reel"></div> 
   </div>
   
-  <div id="debug" class="debug"></div>
+  <!-- Coin balance styled like the reels -->
+  <div class="balance">
+    <div>Coins: <span id="coins">10</span></div>
+    <div>Wins: <span id="wins">0</span></div>
+  </div>
   
   <div style="text-align:center;">
     <button class="button" id="spinButton">Spin</button>
   </div>
 
   <script>
-    /**
-     * Setup
-     */
-    const debugEl = document.getElementById('debug'),
-      // Mapping of indexes to icons: Use your own image URLs here
-      iconMap = [
-        "url('path/to/your/image1.png')", // Replace with your image paths
-        "url('path/to/your/image2.png')",
-        "url('path/to/your/image3.png')",
-        "url('path/to/your/image4.png')",
-        "url('path/to/your/image5.png')",
-        "url('path/to/your/image6.png')",
-        "url('path/to/your/image7.png')",
-        "url('path/to/your/image8.png')",
-        "url('path/to/your/image9.png')"
-      ],
-      // Width of the icons
-      icon_width = 79, 
-      // Height of one icon in the strip
-      icon_height = 79, 
-      // Number of icons in the strip
-      num_icons = 9, 
-      // Max-speed in ms for animating one icon down
-      time_per_icon = 100,
-      // Holds icon indexes
-      indexes = [0, 0, 0, 0]; // Adjusted to hold 4 indexes
+    const coinsEl = document.getElementById('coins'),
+          winsEl = document.getElementById('wins'),
+          iconMap = [
+            "url('img/image1.png')",
+            "url('img/image2.png')",
+            "url('img/image3.png')",
+            "url('img/image4.png')",
+            "url('img/image5.png')"
+          ],
+          icon_width = 79, 
+          icon_height = 79, 
+          num_icons = 5, /* Now only 5 symbols */
+          time_per_icon = 100,
+          indexes = [0, 0, 0, 0];
 
-    /** 
-     * Roll one reel
-     */
-    const roll = (reel, offset = 0) => {
+    let coins = 10, // Starting number of coins
+        wins = 0;   // Starting number of wins
+
+    // Function to handle rolling the reels
+    const roll = (reel, offset = 0, reelIndex = 0) => {
       const delta = (offset + 2) * num_icons + Math.round(Math.random() * num_icons); 
-
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const style = getComputedStyle(reel),
-          backgroundPositionY = parseFloat(style["background-position-y"]),
-          targetBackgroundPositionY = backgroundPositionY + delta * icon_height,
-          normTargetBackgroundPositionY = targetBackgroundPositionY % (num_icons * icon_height);
+              backgroundPositionY = parseFloat(style["background-position-y"]),
+              targetBackgroundPositionY = backgroundPositionY + delta * icon_height,
+              normTargetBackgroundPositionY = targetBackgroundPositionY % (num_icons * icon_height);
 
-        setTimeout(() => { 
-          reel.style.transition = `background-position-y ${(8 + 1 * delta) * time_per_icon}ms cubic-bezier(.41,-0.01,.63,1.09)`;
+        // Randomly assign a different background image from iconMap for each reel
+        reel.style.backgroundImage = iconMap[reelIndex % num_icons];
+
+        requestAnimationFrame(() => {
+          reel.style.transition = `background-position-y ${(8 + 1 * delta) * time_per_icon}ms cubic-bezier(0.4, 0.0, 0.2, 1)`;
           reel.style.backgroundPositionY = `${backgroundPositionY + delta * icon_height}px`;
-        }, offset * 150);
-          
+        });
+
         setTimeout(() => {
-          reel.style.transition = `none`;
+          reel.style.transition = 'none'; 
           reel.style.backgroundPositionY = `${normTargetBackgroundPositionY}px`;
           resolve(delta % num_icons);
-        }, (8 + 1 * delta) * time_per_icon + offset * 150);
+        }, (8 + 1 * delta) * time_per_icon);
       });
     };
 
-    /**
-     * Roll all reels
-     */
+    // Function to check winning combinations
+    const checkForWin = (indexes) => {
+      if (indexes[0] === indexes[1] && indexes[1] === indexes[2] && indexes[2] === indexes[3]) {
+        return 5; // Jackpot: All symbols match
+      } else if (indexes[0] === indexes[1] || indexes[1] === indexes[2] || indexes[2] === indexes[3]) {
+        return 2; // Win for any two adjacent matching symbols
+      }
+      return 0; // No win
+    };
+
+    // Function to handle the spinning of all reels
     function rollAll() {
-      debugEl.textContent = 'rolling...';
+      if (coins <= 0) {
+        alert('You have no coins left!');
+        return;
+      }
+      
+      coins--; // Deduct one coin for each spin
+      coinsEl.textContent = coins;
 
       const reelsList = document.querySelectorAll('.slots > .reel');
-
+      
       Promise
-        .all([...reelsList].map((reel, i) => roll(reel, i))) 
+        .all([...reelsList].map((reel, i) => roll(reel, i, i))) 
         .then((deltas) => {
           deltas.forEach((delta, i) => indexes[i] = (indexes[i] + delta) % num_icons);
-          debugEl.textContent = indexes.map((i) => iconMap[i]).join(' - ');
 
-          if (indexes[0] == indexes[1] || indexes[1] == indexes[2] || indexes[2] == indexes[3]) {
-            const winCls = indexes[0] == indexes[3] ? "win2" : "win1";
-            document.querySelector(".slots").classList.add(winCls);
-            setTimeout(() => document.querySelector(".slots").classList.remove(winCls), 2000);
+          reelsList.forEach((reel, i) => {
+            reel.style.backgroundImage = iconMap[indexes[i]]; // Display the final symbol after spinning
+          });
+
+          const winCoins = checkForWin(indexes);
+          if (winCoins > 0) {
+            wins += winCoins;
+            coins += winCoins; // Add the winning coins to the total coins
+            alert(`You won ${winCoins} coins!`);
+            coinsEl.textContent = coins;
+            winsEl.textContent = wins;
           }
         });
     }
 
-    // Event listener for the "Spin" button
     document.getElementById('spinButton').addEventListener('click', rollAll);
   </script>
 </body>
